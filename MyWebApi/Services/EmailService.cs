@@ -3,7 +3,6 @@ using MimeKit;
 using Microsoft.Extensions.Options;
 using MyWebApi.Configurations;
 
-namespace MyWebApi.Services
 {
     public class EmailService
     {
