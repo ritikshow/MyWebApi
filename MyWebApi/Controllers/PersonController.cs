@@ -1,80 +1,54 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MyWebApi.Models;
-using MyWebApi.Repositories;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace MyWebApi.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class PersonController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class PersonController : ControllerBase
+    private readonly PersonService _personService;
+
+    public PersonController(PersonService personService)
     {
-        private readonly PersonRepository _personRepository;
+        _personService = personService;
+    }
 
-        public PersonController(PersonRepository personRepository)
-        {
-            _personRepository = personRepository;
-        }
+    [HttpGet]
+    public async Task<ActionResult<List<Person>>> GetAll() => await _personService.GetAllAsync();
 
-        // ✅ GET ALL Persons
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var persons = await _personRepository.GetAllAsync();
-            return Ok(persons);
-        }
+    [HttpGet("{id:length(24)}")]
+    public async Task<ActionResult<Person>> GetById(string id)
+    {
+        var person = await _personService.GetByIdAsync(id);
+        if (person == null) return NotFound();
+        return person;
+    }
 
-        // ✅ GET Person by ID
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(string id)
-        {
-            var person = await _personRepository.GetByIdAsync(id);
-            if (person == null)
-            {
-                return NotFound(new { message = "Person not found" });
-            }
-            return Ok(person);
-        }
+    [HttpPost]
+    public async Task<IActionResult> Create(Person person)
+    {
+        await _personService.CreateAsync(person);
+        return CreatedAtAction(nameof(GetById), new { id = person.Id }, person);
+    }
 
-        // ✅ CREATE a new Person (also sends an email)
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Person person)
-        {
-            if (person == null)
-            {
-                return BadRequest(new { message = "Invalid data" });
-            }
+    [HttpPut("{id:length(24)}")]
+    public async Task<IActionResult> Update(string id, Person updatedPerson)
+    {
+        var person = await _personService.GetByIdAsync(id);
+        if (person == null) return NotFound();
 
-            await _personRepository.CreateAsync(person);
-            return CreatedAtAction(nameof(GetById), new { id = person.Id }, person);
-        }
+        await _personService.UpdateAsync(id, updatedPerson);
+        return NoContent();
+    }
 
-        // ✅ UPDATE Person by ID
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] Person person)
-        {
-            var existingPerson = await _personRepository.GetByIdAsync(id);
-            if (existingPerson == null)
-            {
-                return NotFound(new { message = "Person not found" });
-            }
+    [HttpDelete("{id:length(24)}")]
+    public async Task<IActionResult> Delete(string id)
+    {
+        var person = await _personService.GetByIdAsync(id);
+        if (person == null) return NotFound();
 
-            person.Id = id;
-            await _personRepository.UpdateAsync(id, person);
-            return Ok(new { message = "Person updated successfully" });
-        }
-
-        // ✅ DELETE Person by ID
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
-        {
-            var existingPerson = await _personRepository.GetByIdAsync(id);
-            if (existingPerson == null)
-            {
-                return NotFound(new { message = "Person not found" });
-            }
-
-            await _personRepository.DeleteAsync(id);
-            return Ok(new { message = "Person deleted successfully" });
-        }
+        await _personService.DeleteAsync(id);
+        return NoContent();
     }
 }

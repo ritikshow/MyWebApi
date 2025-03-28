@@ -1,41 +1,48 @@
-﻿using MyWebApi.Data;
+﻿using MongoDB.Driver;
+using MyWebApi.Configurations;
 using MyWebApi.Models;
-using MongoDB.Driver;
+using Microsoft.Extensions.Options;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MyWebApi.Repositories
 {
     public class PersonRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IMongoCollection<Person> _personsCollection;
 
-        public PersonRepository(AppDbContext context)
+        public PersonRepository(IOptions<MongoDbSettings> settings)
         {
-            _context = context;
+            var client = new MongoClient(settings.Value.ConnectionString);
+            var database = client.GetDatabase(settings.Value.DatabaseName);
+            _personsCollection = database.GetCollection<Person>(settings.Value.CollectionName);
         }
 
-        public async Task<List<Person>> GetAllAsync()
+        public async Task<List<Person>> GetAllPersonsAsync()
         {
-            return await _context.Persons.Find(_ => true).ToListAsync();
+            return await _personsCollection.Find(_ => true).ToListAsync();
         }
 
-        public async Task<Person?> GetByIdAsync(string id)
+        public async Task<Person> GetPersonByIdAsync(string id)
         {
-            return await _context.Persons.Find(p => p.Id == id).FirstOrDefaultAsync();
+            return await _personsCollection.Find(p => p.Id == id).FirstOrDefaultAsync();
         }
 
-        public async Task CreateAsync(Person person)
+        public async Task CreatePersonAsync(Person person)
         {
-            await _context.Persons.InsertOneAsync(person);
+            await _personsCollection.InsertOneAsync(person);
         }
 
-        public async Task UpdateAsync(string id, Person person)
+        public async Task<bool> UpdatePersonAsync(Person person)
         {
-            await _context.Persons.ReplaceOneAsync(p => p.Id == id, person);
+            var result = await _personsCollection.ReplaceOneAsync(p => p.Id == person.Id, person);
+            return result.ModifiedCount > 0;
         }
 
-        public async Task DeleteAsync(string id)
+        public async Task<bool> DeletePersonAsync(string id)
         {
-            await _context.Persons.DeleteOneAsync(p => p.Id == id);
+            var result = await _personsCollection.DeleteOneAsync(p => p.Id == id);
+            return result.DeletedCount > 0;
         }
     }
 }

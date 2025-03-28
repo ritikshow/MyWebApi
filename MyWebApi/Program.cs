@@ -1,24 +1,20 @@
-using MyWebApi.Configurations;
-using MyWebApi.Data;
-using MyWebApi.Services;
+﻿using MyWebApi.Configurations;
 using MyWebApi.Repositories;
-using Microsoft.Extensions.Options;
+using EmailSettings = MyWebApi.Configurations.EmailSettings;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ? Bind MongoDB settings
-builder.Services.Configure<MongoDbSettings>(
-    builder.Configuration.GetSection("MongoDbSettings"));
+// ✅ MongoDB Configuration
+builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDB"));
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
-// ? Bind Email settings
-builder.Services.Configure<EmailSettings>(
-    builder.Configuration.GetSection("EmailSettings"));
-
-// ? Register Services
-builder.Services.AddSingleton<AppDbContext>();
-builder.Services.AddSingleton<EmailService>();
+// Register services
+builder.Services.AddSingleton<PersonService>();
+// ✅ Register Services
 builder.Services.AddSingleton<PersonRepository>();
+builder.Services.AddSingleton<EmailService>();
 
+// ✅ Add Controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -31,7 +27,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
